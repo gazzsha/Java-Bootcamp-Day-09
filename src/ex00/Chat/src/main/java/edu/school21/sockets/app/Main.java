@@ -1,11 +1,10 @@
 package edu.school21.sockets.app;
 
-import com.beust.jcommander.JCommander;
 import edu.school21.sockets.server.Server;
-import edu.school21.sockets.utils.Parametr;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -16,13 +15,14 @@ public class Main {
 
 
     public static void main(String[] args) throws IOException {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(Main.class);
-        Parametr parametr = context.getBean("parametr", Parametr.class);
-        JCommander.newBuilder()
-                .addObject(parametr)
-                .build()
-                .parse(args);
+
+        PropertySource theSource = new SimpleCommandLinePropertySource(args);
+        AnnotationConfigApplicationContext context =
+                new AnnotationConfigApplicationContext();
+        context.getEnvironment().getPropertySources().addFirst(theSource);
+        context.register(Main.class);
+        context.refresh();
         Server server = context.getBean("server", Server.class);
-        server.init(parametr.port);
+        server.init();
     }
 }

@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService {
     public Boolean SignUp(String email,String password) {
             if (userRepository.findByUsername(email).isEmpty()) {
                 User user = new User();
-                user.setPassword(email);
+                user.setUsername(email);
                 user.setPassword(passwordEncoder.encode(password));
                 userRepository.save(user);
                 return true;

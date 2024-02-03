@@ -45,13 +45,13 @@ public class UserRepositoryImpl implements UserRepository<User> {
 
     @Override
     public void save(User entity) {
-        jdbcTemplate.update("INSERT INTO users(email,password) VALUES (?,?)",
+        jdbcTemplate.update("INSERT INTO users(username,password) VALUES (?,?)",
                 entity.getUsername(),entity.getPassword());
     }
 
     @Override
     public void update(User entity) {
-        jdbcTemplate.update("UPDATE users SET email = ?,password = ? WHERE id = ?",
+        jdbcTemplate.update("UPDATE users SET username = ?,password = ? WHERE id = ?",
                 entity.getUsername(),entity.getPassword(), entity.getId());
     }
 
@@ -63,7 +63,7 @@ public class UserRepositoryImpl implements UserRepository<User> {
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return jdbcTemplate.query("SELECT * FROM users WHERE email = ?", (rs, rowNumber) -> {
+        return jdbcTemplate.query("SELECT * FROM users WHERE username = ?", (rs, rowNumber) -> {
             User user = new User();
             user.setId(rs.getInt(1));
             user.setUsername(rs.getString(2));
