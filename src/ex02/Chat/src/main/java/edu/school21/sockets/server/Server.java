@@ -1,6 +1,10 @@
 package edu.school21.sockets.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.school21.sockets.entity.Room;
+import edu.school21.sockets.entity.User;
+import edu.school21.sockets.message.MessageJSON;
+import edu.school21.sockets.message.MessageJsonClient;
 import edu.school21.sockets.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -28,16 +33,19 @@ public class Server {
     private String port;
 
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+
     final List<BufferedWriter> users = new ArrayList<>();
 
-    final CopyOnWriteArrayList<Room> rooms = new CopyOnWriteArrayList<>();
-
-    final Map<String, BufferedWriter> roomsOut = new HashMap<>();
+    CopyOnWriteArrayList<Room> rooms = new CopyOnWriteArrayList<>();
 
 
     public void init() throws IOException {
 
         ExecutorService executorService = Executors.newCachedThreadPool();
+        rooms.addAll(userService.findAllRooms());
 
         try (ServerSocket server = new ServerSocket(Integer.parseInt(port))) {
 
@@ -48,10 +56,12 @@ public class Server {
                     try (Socket socket = clientSocket) {
                         work(socket);
                     } catch (IOException e) {
-                      e.printStackTrace();
+                        e.printStackTrace();
                     }
                 });
             }
+        } catch (SocketException socketException) {
+            System.out.println("Client closed unexpected!");
         }
     }
 
@@ -100,8 +110,8 @@ public class Server {
         out.flush();
         String name = in.readLine();
         synchronized (rooms) {
-            Room room = new Room(name);
-            rooms.add(room);
+            userService.saveRoom(name);
+            rooms.add(userService.findByNameRoom(name));
         }
         roomMenu(out, in, socket);
     }
@@ -129,8 +139,21 @@ public class Server {
             if (rooms.get(userChooseInt - 1) != null) {
                 rooms.get(userChooseInt - 1).listOutSockets.add(out);
                 out.write("Chat\n");
-                out.write(rooms.get(userChooseInt - 1).getName() + "\n");
+                MessageJSON messageJSON = new MessageJSON();
+                messageJSON.setUserId(0);
+                messageJSON.setRoomId(userChooseInt - 1);
+                messageJSON.setMessage(rooms.get(userChooseInt - 1).getName());
+                messageJSON.setUsername("Server");
+                String message = objectMapper.writeValueAsString(messageJSON);
+                out.write( message + "\n");
+                System.out.println(rooms.get(userChooseInt - 1).getName());
                 out.flush();
+                for (String messageInRoom : rooms.get(userChooseInt - 1).getMessages()) {
+                    out.write(messageInRoom + "\n");
+                    System.out.println(messageInRoom);
+                    out.flush();
+                }
+                System.out.println(rooms.get(userChooseInt - 1).getMessages());
                 echoServer(in, rooms.get(userChooseInt - 1));
             }
         }
@@ -150,10 +173,14 @@ public class Server {
                 users.add(out);
             }
             roomMenu(out, in, socket);
+        } else {
+            out.write("You are not registered,please try again!\n");
+            out.flush();
+            work(socket);
         }
     }
 
-    void signUpForUser(BufferedWriter out, BufferedReader in) throws IOException {
+    void signUpForUser(BufferedWriter out, BufferedReader in, Socket socket) throws IOException {
         out.write("Write username" + '\n');
         out.write("Stop" + '\n');
         out.flush();
@@ -164,9 +191,11 @@ public class Server {
         String password = in.readLine();
         if (userService.SignUp(username, password)) {
             out.write("Successful!" + '\n');
-            out.write("Stop" + '\n');
-        } else out.write("Something went wrong..." + '\n');
+        } else {
+            out.write("User already exist with username: " + username + '\n');
+        }
         out.flush();
+        work(socket);
     }
 
 
@@ -181,7 +210,7 @@ public class Server {
                 break;
             }
             case 2: {
-                signUpForUser(out, in);
+                signUpForUser(out, in, client);
                 break;
 
             }
@@ -199,15 +228,23 @@ public class Server {
         while (true) {
             String message = in.readLine();
             if (message != null && !room.listOutSockets.isEmpty()) {
+                MessageJsonClient messageJsonClient = objectMapper.readValue(message, MessageJsonClient.class);
+                MessageJSON messageJSONServer = new MessageJSON();
+                messageJSONServer.setUserId(userService.findByUsername(messageJsonClient.getUsername()).getId());
+                messageJSONServer.setRoomId(room.getId());
+                messageJSONServer.setMessage(messageJsonClient.getMessage());
+                messageJSONServer.setUsername(messageJsonClient.getUsername());
+                String JSONAnswer = objectMapper.writeValueAsString(messageJSONServer);
                 for (BufferedWriter out : room.listOutSockets) {
                     try {
-                        out.write(message + "\n");
+                        out.write(JSONAnswer + "\n");
                         out.flush();
                     } catch (IOException ioException) {
                         out.close();
                         room.listOutSockets.remove(out);
                     }
                 }
+                room.addMessage(JSONAnswer);
                 System.out.println("Server input: " + message);
             }
         }

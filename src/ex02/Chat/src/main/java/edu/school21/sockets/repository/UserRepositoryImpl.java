@@ -1,5 +1,6 @@
 package edu.school21.sockets.repository;
 
+import edu.school21.sockets.entity.Room;
 import edu.school21.sockets.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -77,6 +78,31 @@ public class UserRepositoryImpl implements UserRepository<User> {
     public void sendMessage(String username, String message, LocalDateTime time) {
         jdbcTemplate.update("INSERT INTO messages(Sender,message,time) VALUES " +
                 "(?,?,?)",username,message,time);
+    }
+
+    @Override
+    public void saveRoom(String roomName) {
+        jdbcTemplate.update("INSERT INTO chat_rooms(name) VALUES (?)",roomName);
+    }
+
+    @Override
+    public Room findByNameRoom(String roomName) {
+        return jdbcTemplate.query("SELECT * FROM chat_rooms WHERE name = ?", (rs, rowNumber) -> {
+            Room room = new Room();
+            room.setId(rs.getInt(1));
+            room.setName(rs.getString(2));
+            return room;
+        }, roomName).stream().findAny().orElseThrow();
+    }
+
+    @Override
+    public List<Room> findAllRoom() {
+        return jdbcTemplate.query("SELECT * FROM chat_rooms", (rs, rowNum) -> {
+            Room room = new Room();
+            room.setId(rs.getInt(1));
+            room.setName(rs.getString(2));
+            return room;
+        });
     }
 
 

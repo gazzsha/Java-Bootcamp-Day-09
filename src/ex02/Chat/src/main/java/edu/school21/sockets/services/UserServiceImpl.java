@@ -1,6 +1,7 @@
 package edu.school21.sockets.services;
 
 
+import edu.school21.sockets.entity.Room;
 import edu.school21.sockets.entity.User;
 import edu.school21.sockets.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -40,6 +42,26 @@ public class UserServiceImpl implements UserService {
             return passwordEncoder.matches(password, user.get().getPassword());
         }
         return false;
+    }
+
+    @Override
+    public void saveRoom(String nameRoom) {
+        userRepository.saveRoom(nameRoom);
+    }
+
+    @Override
+    public Room findByNameRoom(String nameRoom) {
+        return userRepository.findByNameRoom(nameRoom);
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return  userRepository.findByUsername(username).stream().findAny().orElseThrow();
+    }
+
+    @Override
+    public List<Room> findAllRooms() {
+        return userRepository.findAllRoom();
     }
 
     @Override

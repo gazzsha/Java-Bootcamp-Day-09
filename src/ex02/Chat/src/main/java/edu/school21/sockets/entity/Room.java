@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Room {
-    private final String name;
-    private final List<String> messages;
 
-    public CopyOnWriteArrayList<BufferedWriter> listOutSockets;
+    private int id;
+    private String name;
+    private CopyOnWriteArrayList<String> messages = new CopyOnWriteArrayList<>();
 
-    public Room(String name) {
-        this.name = name;
-        messages = new ArrayList<>();
-        listOutSockets = new CopyOnWriteArrayList<>();
+    public CopyOnWriteArrayList<BufferedWriter> listOutSockets = new CopyOnWriteArrayList<>();
+
+
+    public Room() {
     }
 
     public String getName() {
@@ -27,5 +27,28 @@ public class Room {
 
     public List<BufferedWriter> getListOutSockets() {
         return listOutSockets;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void addMessage(String message) {
+        if (messages.size() == 30) {
+            messages.removeFirst();
+            messages.add(message);
+        } else messages.add(message);
+    }
+
+    public void setListOutSockets(CopyOnWriteArrayList<BufferedWriter> listOutSockets) {
+        this.listOutSockets = listOutSockets;
     }
 }

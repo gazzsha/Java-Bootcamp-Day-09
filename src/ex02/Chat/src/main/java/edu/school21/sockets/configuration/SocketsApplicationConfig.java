@@ -1,5 +1,6 @@
 package edu.school21.sockets.configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,11 @@ public class SocketsApplicationConfig {
         hikariConfig.setPassword(environment.getProperty("hikari.password"));
         hikariConfig.setJdbcUrl(environment.getProperty("hikari.jdbcUrl"));
         return hikariConfig;
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
     @Bean

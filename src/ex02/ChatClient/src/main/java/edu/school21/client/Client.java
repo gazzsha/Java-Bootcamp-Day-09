@@ -1,5 +1,9 @@
 package edu.school21.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.school21.message.MessageJSON;
+import edu.school21.message.MessageJsonClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +13,10 @@ import java.net.SocketException;
 
 @Component
 public class Client {
+
+
+    @Autowired
+    ObjectMapper objectMapper;
 
     @Value("${server-port}")
     private String port;
@@ -88,7 +96,8 @@ public class Client {
                             try {
                                 String message;
                                 while ((message = in.readLine()) != null) {
-                                    System.out.println(message);
+                                    MessageJSON messageJSON = objectMapper.readValue(message, MessageJSON.class);
+                                    System.out.println(messageJSON.getUsername() + ": " + messageJSON.getMessage());
                                 }
                             } catch (IOException ignore) {
                             }
@@ -97,7 +106,11 @@ public class Client {
                     thread.start();
                     while (!"Exit".equalsIgnoreCase(userMessage)) {
                         userMessage = reader.readLine();
-                        out.write(username + ": " + userMessage + "\n");
+                        MessageJsonClient message = new MessageJsonClient();
+                        message.setUsername(username);
+                        message.setMessage(userMessage);
+                        String json = objectMapper.writeValueAsString(message);
+                        out.write(json + "\n");
                         out.flush();
                     }
                     System.out.println("You have left the chat");
